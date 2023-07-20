@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -36,11 +37,25 @@ func main() {
 		Data:       copiedData,
 	}
 
+	_, err = cl.CoreV1().Secrets(*destSecretNamespace).Get(context.Background(), *destSecretName, metav1.GetOptions{})
+	if err == nil {
+		_, err = cl.CoreV1().Secrets(*destSecretNamespace).Update(context.Background(), &dstSecret, metav1.UpdateOptions{})
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("Secret is updated!\n%v/%v\n", dstSecret.Name, dstSecret.Namespace)
+
+		return
+	}
+
 	// Instead of creating the secret directly, use CreateOrUpdate
 	_, err = cl.CoreV1().Secrets(*destSecretNamespace).Create(context.Background(), &dstSecret, metav1.CreateOptions{})
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Printf("Secret is created!\n%v/%v\n", dstSecret.Name, dstSecret.Namespace)
 }
 
 func initClient() *kubernetes.Clientset {
